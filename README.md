@@ -1,5 +1,7 @@
 # Lumina
 
+[![CI](https://github.com/AbhijitDoesCoding/Lumina/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhijitDoesCoding/Lumina/actions/workflows/ci.yml)
+
 A high-performance command-line file compressor written in modern C++ (C++20),
 using **only the C++ standard library** — no zlib, no third-party code. It
 implements **Huffman coding** and **LZW** from scratch, streams data in fixed
@@ -173,4 +175,4 @@ start at 258.
 
 ## License
 
-MIT (see source headers / add a LICENSE file as needed).
+MIT — see [LICENSE](LICENSE).

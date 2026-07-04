@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux (GCC)
+            os: ubuntu-latest
+          - name: Linux (Clang)
+            os: ubuntu-latest
+            cxx: clang++
+          - name: Windows (MSVC)
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        env:
+          CXX: ${{ matrix.cxx }}
+
+      - name: Build
+        run: cmake --build build --config Release -j
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Smoke test the CLI
+        shell: bash
+        run: |
+          BIN=build/lumina
+          [ -f build/Release/lumina.exe ] && BIN=build/Release/lumina.exe
+          [ -f build/lumina.exe ] && BIN=build/lumina.exe
+          echo "using $BIN"
+          printf 'the quick brown fox %.0s' {1..500} > sample.txt
+          "$BIN" compress   sample.txt -o s.huf.lum -f
+          "$BIN" compress   -a lzw sample.txt -o s.lzw.lum -f
+          "$BIN" decompress s.huf.lum -o out.huf.txt -f
+          "$BIN" decompress s.lzw.lum -o out.lzw.txt -f
+          cmp sample.txt out.huf.txt
+          cmp sample.txt out.lzw.txt
+          echo "round-trip OK on ${{ matrix.name }}"
