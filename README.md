@@ -51,7 +51,33 @@ cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```
 
-The `lumina` executable lands in `build/`.
+The `lumina` executable lands in `build/`. It is statically linked against the
+C++ runtime, so the binary is self-contained (no libstdc++/libgcc/MSVCRT DLLs to
+ship).
+
+### Packaging
+
+CPack produces a distributable archive (`.zip` on Windows, `.tar.gz` elsewhere)
+containing `bin/lumina`, the README, and the LICENSE:
+
+```bash
+cmake --build build --config Release
+cpack --config build/CPackConfig.cmake -B dist
+# -> dist/lumina-1.0.0-<os>-<arch>.{zip,tar.gz}
+```
+
+### Releases
+
+Pushing a `v*` tag triggers the [Release workflow](.github/workflows/release.yml),
+which builds and packages on Linux and Windows and attaches the archives to a
+GitHub Release:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+Prebuilt binaries are available on the
+[Releases page](https://github.com/AbhijitDoesCoding/Lumina/releases).
 
 ---
 
@@ -172,6 +198,11 @@ start at 258.
 - CRC-32 is an integrity checksum, not a cryptographic hash.
 
 ---
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the
+build/test workflow and the standard-library-only ground rules.
 
 ## License
 

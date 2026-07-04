@@ -42,6 +42,17 @@ endif()
 add_executable(lumina src/main.cpp)
 target_link_libraries(lumina PRIVATE lumina_core)
 
+# Statically link the C++/runtime libraries so distributed binaries are
+# self-contained (no external libstdc++/libgcc/MSVCRT DLLs to ship).
+if(MINGW)
+    target_link_options(lumina PRIVATE -static -static-libgcc -static-libstdc++)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT APPLE)
+    target_link_options(lumina PRIVATE -static-libgcc -static-libstdc++)
+elseif(MSVC)
+    set_property(TARGET lumina PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # ---- Tests (round-trip harness, built with ctest) ----------------------------
 enable_testing()
 add_executable(lumina_tests tests/roundtrip_tests.cpp)
@@ -49,3 +60,25 @@ target_link_libraries(lumina_tests PRIVATE lumina_core)
 add_test(NAME roundtrip COMMAND lumina_tests)
 
 install(TARGETS lumina RUNTIME DESTINATION bin)
+install(FILES README.md LICENSE DESTINATION .)
+
+# ---- Packaging (CPack): produce distributable archives -----------------------
+set(CPACK_PACKAGE_NAME "lumina")
+set(CPACK_PACKAGE_VENDOR "AbhijitDoesCoding")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_CONTACT "abalpande1804@gmail.com")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+
+# Fold the target OS + architecture into the archive file name.
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP")
+    set(CPACK_SYSTEM_NAME "windows-${CMAKE_SYSTEM_PROCESSOR}")
+else()
+    set(CPACK_GENERATOR "TGZ")
+    set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+set(CPACK_PACKAGE_FILE_NAME
+    "lumina-${PROJECT_VERSION}-${CPACK_SYSTEM_NAME}")
+
+include(CPack)
