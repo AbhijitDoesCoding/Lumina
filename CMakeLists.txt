@@ -17,6 +17,16 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
         "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
 endif()
 
+# Statically link the MSVC runtime so the shipped binary is self-contained.
+# This MUST be set globally (before any target) so every object — lumina_core,
+# lumina, and the tests — agrees on the runtime; mixing /MT and /MD produces
+# multiply-defined-symbol link errors (LNK1169).
+if(MSVC)
+    cmake_policy(SET CMP0091 NEW)  # honor CMAKE_MSVC_RUNTIME_LIBRARY
+    set(CMAKE_MSVC_RUNTIME_LIBRARY
+        "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # ---- Library target: all codec logic lives here, main() just drives it -------
 add_library(lumina_core STATIC
     src/Crc32.cpp
@@ -42,15 +52,13 @@ endif()
 add_executable(lumina src/main.cpp)
 target_link_libraries(lumina PRIVATE lumina_core)
 
-# Statically link the C++/runtime libraries so distributed binaries are
-# self-contained (no external libstdc++/libgcc/MSVCRT DLLs to ship).
+# Statically link the GCC/Clang runtime so distributed binaries are
+# self-contained (no external libstdc++/libgcc DLLs to ship). The MSVC runtime
+# is handled globally via CMAKE_MSVC_RUNTIME_LIBRARY above.
 if(MINGW)
     target_link_options(lumina PRIVATE -static -static-libgcc -static-libstdc++)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT APPLE)
     target_link_options(lumina PRIVATE -static-libgcc -static-libstdc++)
-elseif(MSVC)
-    set_property(TARGET lumina PROPERTY
-        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # ---- Tests (round-trip harness, built with ctest) ----------------------------
